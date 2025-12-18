@@ -5,8 +5,7 @@ oo::class create app {
     variable viewingDir
     constructor {} {
         grid [ttk::button .up -text "Up" -command "[self] upClicked"]
-        grid [ttk::treeview .tree]
-        .tree tag bind clickable <ButtonPress> "[self] itemClicked %W"
+        grid [ttk::frame .files]
         set iDir [pwd]
         set viewingDir ""
     }
@@ -21,9 +20,13 @@ oo::class create app {
         if {$iDir != $viewingDir} {
             cd $iDir
             set files [glob *]
-            .tree children {} {}
+            foreach child [winfo children .files] {
+                destroy $child
+            }
+            set i 0
             foreach file $files {
-                .tree insert {} end -text $file -tags [list clickable]
+                grid [ttk::label .files.$i -text $file]
+                incr i
             }
             set $viewingDir $iDir
         }
