@@ -6,7 +6,7 @@ oo::class create app {
     constructor {} {
         grid [ttk::button .up -text "Up" -command "[self] upClicked"]
         grid [ttk::frame .files -width 640 -height 480]
-        grid [ttk::scrollbar .filesScroll -command [list .files yview]] -column 1
+        grid [ttk::scrollbar .filesScroll -command [list .files yview]] -row 1 -column 1 -sticky ns
         grid propagate .files false
         set iDir [pwd]
         set viewingDir ""
@@ -15,7 +15,7 @@ oo::class create app {
         set iDir [file dirname $iDir]
         my update
     }
-    method fileClicked {path} {
+    method dirClicked {path} {
         set iDir $iDir/$path
         my update
     }
@@ -35,15 +35,16 @@ oo::class create app {
                     lappend files $entry
                 }
             }
+            set entries [concat $dirs $files]
+            set viewingEntries [lrange $entries 0 10]
+            .filesScroll set 0 [expr 10. / [llength $entries]]
             set i 0
-            foreach entry $dirs {
-                grid [ttk::label .files.$i -text $entry/ -foreground "blue violet"] -sticky w
-                bind .files.$i <1> [list [self] fileClicked $entry]
-                incr i
-            }
-            foreach entry $files {
+            foreach entry $viewingEntries {
                 grid [ttk::label .files.$i -text $entry] -sticky w
-                bind .files.$i <1> [list [self] fileClicked $entry]
+                if [file isdirectory $entry] {
+                    .files.$i configure -foreground "blue violet"
+                    bind .files.$i <1> [list [self] dirClicked $entry]
+                }
                 incr i
             }
             set $viewingDir $iDir
