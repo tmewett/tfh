@@ -1,34 +1,33 @@
 package require Tk
 
 oo::class create app {
-    variable iDir
-    variable viewingDir
+    variable iDir viewDir viewStart viewStartL entries
     constructor {} {
         grid [ttk::button .up -text "Up" -command "[self] upClicked"]
         grid [ttk::frame .files -width 640 -height 480]
-        grid [ttk::scrollbar .filesScroll -command [list .files yview]] -row 1 -column 1 -sticky ns
+        bind .files <MouseWheel> [list [self] scrolled %D]
+        grid [ttk::scrollbar .filesScroll] -row 1 -column 1 -sticky ns
         grid propagate .files false
         set iDir [pwd]
-        set viewingDir ""
+        set viewDir ""
+        set viewStart 0
+        set viewStartL -1
     }
     method upClicked {} {
         set iDir [file dirname $iDir]
-        my update
+        my update {}
     }
     method dirClicked {path} {
         set iDir $iDir/$path
-        my update
+        my update {}
     }
-    method update {} {
-        if {$iDir != $viewingDir} {
+    method update {events} {
+        if {$iDir != $viewDir} {
             cd $iDir
-            set entries [glob *]
-            foreach child [winfo children .files] {
-                destroy $child
-            }
+            set globList [glob *]
             set dirs [list]
             set files [list]
-            foreach entry $entries {
+            foreach entry $globList {
                 if [file isdirectory $entry] {
                     lappend dirs $entry
                 } else {
@@ -36,8 +35,15 @@ oo::class create app {
                 }
             }
             set entries [concat $dirs $files]
-            set viewingEntries [lrange $entries 0 10]
-            .filesScroll set 0 [expr 10. / [llength $entries]]
+            .filesScroll set 0 [expr 16. / [llength $entries]]
+            set viewDir $iDir
+            set viewStartL -1
+        }
+        if {$viewStart != $viewStartL} {
+            foreach child [winfo children .files] {
+                destroy $child
+            }
+            set viewingEntries [lrange $entries $viewStart [expr $viewStart +16]]
             set i 0
             foreach entry $viewingEntries {
                 grid [ttk::label .files.$i -text $entry] -sticky w
@@ -47,12 +53,12 @@ oo::class create app {
                 }
                 incr i
             }
-            set $viewingDir $iDir
+            set viewStartL $viewStart
         }
     }
 }
 
 set appO [app new]
-$appO update
+$appO update {}
 
 tkwait window .
