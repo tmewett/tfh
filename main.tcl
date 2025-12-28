@@ -1,7 +1,7 @@
 package require Tk
 
 oo::class create app {
-    variable iDir viewDir iStart viewStart entries
+    variable iDir viewDir viewStartL viewStart entries
     constructor {} {
         grid [ttk::button .up -text "Up" -command "[self] upClicked"]
         grid [ttk::frame .files -width 640 -height 480]
@@ -9,25 +9,23 @@ oo::class create app {
         grid [ttk::scrollbar .filesScroll] -row 1 -column 1 -sticky ns
         grid propagate .files false
         set iDir [pwd]
-        set iStart 0
         set viewDir ""
-        set viewStart -1
+        set viewStart 0
+        set viewStartL 0
     }
     method scrolled {delta} {
-        incr iStart $delta
-        my update {}
+        my update [list scroll $delta]
     }
     method upClicked {} {
         set iDir [file dirname $iDir]
-        set iStart 0
         my update {}
     }
     method dirClicked {path} {
         set iDir $iDir/$path
-        set iStart 0
         my update {}
     }
-    method update {events} {
+    method update {eventsIn} {
+        set events [dict merge {scroll 0} $eventsIn]
         set dirChanged [expr {$iDir != $viewDir}]
         if $dirChanged {
             cd $iDir
@@ -45,11 +43,12 @@ oo::class create app {
             .filesScroll set 0 [expr 16. / [llength $entries]]
             set viewDir $iDir
         }
-        if {$dirChanged || $iStart != $viewStart} {
+        incr viewStart [dict get $events scroll]
+        if {$dirChanged || $viewStart != $viewStartL} {
             foreach child [winfo children .files] {
                 destroy $child
             }
-            set viewingEntries [lrange $entries $iStart [expr $iStart +16]]
+            set viewingEntries [lrange $entries $viewStart [expr $viewStart +16]]
             set i 0
             foreach entry $viewingEntries {
                 grid [ttk::label .files.$i -text $entry] -sticky w
@@ -59,7 +58,7 @@ oo::class create app {
                 }
                 incr i
             }
-            set viewStart $iStart
+            set viewStartL $viewStart
         }
     }
 }
